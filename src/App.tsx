@@ -20,6 +20,7 @@ import TeamStrategyPage from "./pages/teams/[id]/strategy";
 import TournamentDetailsPage from "./pages/tournaments/[id]";
 import GameDetailsPage from "./pages/games/[id]";
 import NotificationsPage from "./pages/notifications";
+import AdminPage from "./pages/admin";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/games" element={<GamesPage />} />
             <Route path="/games/:id" element={<GameDetailsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

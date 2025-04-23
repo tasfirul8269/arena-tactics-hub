@@ -1,4 +1,4 @@
-
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,9 +9,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MessageSquare, Bell, Settings, LogOut, HelpCircle, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { checkIsAdmin } from "@/lib/api";
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkIsAdmin().then(setIsAdmin);
+    }
+  }, [user]);
 
   return (
     <nav className="bg-card border-b border-border/40 backdrop-blur-lg sticky top-0 z-50">
@@ -55,6 +63,14 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Admin Panel</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -48,4 +47,18 @@ export const fetchTournaments = async () => {
     throw error;
   }
   return data;
+};
+
+export const checkIsAdmin = async () => {
+  const { data: roles, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .single();
+
+  if (error) {
+    toast.error('Error checking admin status');
+    return false;
+  }
+  
+  return roles?.role === 'admin';
 };
