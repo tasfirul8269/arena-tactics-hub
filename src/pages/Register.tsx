@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
+import { signUp } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -21,17 +23,20 @@ const Register = () => {
     setLoading(true);
     setError("");
     
-    // Simulate registration for now - this will be connected to Firebase later
     try {
-      console.log("Register with", { name, email, password });
-      setTimeout(() => {
-        setLoading(false);
-        navigate("/dashboard");
-      }, 1500);
-    } catch (err) {
-      setLoading(false);
-      setError("Failed to create account. Please try again.");
+      const { error } = await signUp(email, password, { full_name: name });
+      
+      if (error) {
+        setError(error.message);
+      } else {
+        toast.success("Registration successful! Please verify your email.");
+        navigate("/login");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to create account. Please try again.");
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 

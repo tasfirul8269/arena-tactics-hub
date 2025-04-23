@@ -3,35 +3,59 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { MapPin, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Trash2, Save } from "lucide-react";
+import { saveMapStrategy } from "@/lib/supabase";
 
-// This is a simplified map strategy component using static images
-const MapStrategy = () => {
+interface MapStrategyProps {
+  initialMapData?: any;
+  teamId: number;
+  onMapChange?: (mapName: string) => void;
+}
+
+const MapStrategy = ({ initialMapData, teamId, onMapChange }: MapStrategyProps) => {
   const [activeMap, setActiveMap] = useState("erangel");
   const [activeMode, setActiveMode] = useState<"none" | "marker" | "route">("none");
+  const [isSaving, setIsSaving] = useState(false);
   
   // Map overlay and drawing state
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mapImageRef = useRef<HTMLImageElement | null>(null);
-  const markersRef = useRef<{ x: number; y: number }[]>([]);
-  const routePointsRef = useRef<{ x: number; y: number }[]>([]);
-  const isDrawingRef = useRef<boolean>(false);
-  const isDraggingRef = useRef<boolean>(false);
-  const lastPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [markers, setMarkers] = useState<{ x: number; y: number }[]>([]);
+  const [routePoints, setRoutePoints] = useState<{ x: number; y: number }[]>([]);
   
   // Map images for different maps
   const mapImages = {
-    erangel: "https://i.imgur.com/PI3qYlK.jpg", // Replace with your actual erangel map image
-    miramar: "https://i.imgur.com/VqRKWz3.jpg", // Replace with your actual miramar map image
-    sanhok: "https://i.imgur.com/tn7sUkl.jpg", // Replace with your actual sanhok map image
+    erangel: "https://i.imgur.com/PI3qYlK.jpg",
+    miramar: "https://i.imgur.com/VqRKWz3.jpg",
+    sanhok: "https://i.imgur.com/tn7sUkl.jpg",
   };
+
+  // Handle map change
+  useEffect(() => {
+    if (onMapChange) {
+      onMapChange(activeMap);
+    }
+  }, [activeMap, onMapChange]);
+
+  // Load initial data if available
+  useEffect(() => {
+    if (initialMapData) {
+      if (initialMapData.markers) {
+        setMarkers(initialMapData.markers);
+      }
+      if (initialMapData.route_points) {
+        setRoutePoints(initialMapData.route_points);
+      }
+    }
+  }, [initialMapData]);
 
   // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    const mapImage = mapImageRef.current;
+    const mapImage = new Image();
+    mapImageRef.current = mapImage;
     
-    if (!canvas || !mapImage) return;
+    if (!canvas) return;
     
     // Set canvas dimensions to match image when it loads
     mapImage.onload = () => {
@@ -42,7 +66,7 @@ const MapStrategy = () => {
     
     mapImage.src = mapImages[activeMap as keyof typeof mapImages];
   }, [activeMap]);
-
+  
   // Draw everything on the canvas
   const drawAll = () => {
     const canvas = canvasRef.current;
@@ -61,7 +85,7 @@ const MapStrategy = () => {
     }
 
     // Draw markers
-    markersRef.current.forEach(marker => {
+    markers.forEach(marker => {
       ctx.beginPath();
       ctx.arc(marker.x, marker.y, 10, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
@@ -72,12 +96,12 @@ const MapStrategy = () => {
     });
 
     // Draw route
-    if (routePointsRef.current.length > 1) {
+    if (routePoints.length > 1) {
       ctx.beginPath();
-      ctx.moveTo(routePointsRef.current[0].x, routePointsRef.current[0].y);
+      ctx.moveTo(routePoints[0].x, routePoints[0].y);
       
-      for (let i = 1; i < routePointsRef.current.length; i++) {
-        ctx.lineTo(routePointsRef.current[i].x, routePointsRef.current[i].y);
+      for (let i = 1; i < routePoints.length; i++) {
+        ctx.lineTo(routePoints[i].x, routePoints[i].y);
       }
       
       ctx.strokeStyle = '#F84C4C';
@@ -85,7 +109,7 @@ const MapStrategy = () => {
       ctx.stroke();
 
       // Draw route points
-      routePointsRef.current.forEach(point => {
+      routePoints.forEach(point => {
         ctx.beginPath();
         ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
         ctx.fillStyle = '#F84C4C';
@@ -93,6 +117,11 @@ const MapStrategy = () => {
       });
     }
   };
+
+  // Update the canvas when markers or routes change
+  useEffect(() => {
+    drawAll();
+  }, [markers, routePoints]);
 
   // Handle canvas click
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -106,14 +135,12 @@ const MapStrategy = () => {
     const y = (e.clientY - rect.top) * (canvas.height / rect.height);
     
     if (activeMode === "marker") {
-      markersRef.current.push({ x, y });
+      setMarkers(prev => [...prev, { x, y }]);
       toast.success("Marker placed");
     } else if (activeMode === "route") {
-      routePointsRef.current.push({ x, y });
+      setRoutePoints(prev => [...prev, { x, y }]);
       toast.success("Route point added");
     }
-    
-    drawAll();
   };
 
   // Toggle active mode
@@ -123,10 +150,22 @@ const MapStrategy = () => {
   
   // Clear all markers and routes
   const clearAll = () => {
-    markersRef.current = [];
-    routePointsRef.current = [];
-    drawAll();
+    setMarkers([]);
+    setRoutePoints([]);
     toast.success("Map cleared");
+  };
+
+  // Save strategy to database
+  const saveStrategy = async () => {
+    try {
+      setIsSaving(true);
+      await saveMapStrategy(teamId, activeMap, markers, routePoints);
+      toast.success("Strategy saved successfully!");
+    } catch (error: any) {
+      toast.error("Failed to save strategy: " + error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -165,12 +204,6 @@ const MapStrategy = () => {
       <CardContent className="p-0">
         <div className="relative aspect-video bg-muted">
           <div className="relative w-full h-full overflow-hidden">
-            <img 
-              ref={mapImageRef}
-              src={mapImages[activeMap as keyof typeof mapImages]}
-              alt={`${activeMap} map`}
-              className="absolute invisible"
-            />
             <canvas 
               ref={canvasRef}
               onClick={handleCanvasClick}
@@ -205,6 +238,17 @@ const MapStrategy = () => {
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Clear
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default" 
+              className="bg-green-600 hover:bg-green-700" 
+              title="Save Strategy"
+              onClick={saveStrategy}
+              disabled={isSaving}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Saving..." : "Save"}
             </Button>
           </div>
         </div>

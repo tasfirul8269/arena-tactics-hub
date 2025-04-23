@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
+import { signIn } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,17 +22,20 @@ const Login = () => {
     setLoading(true);
     setError("");
     
-    // Simulate login for now - this will be connected to Firebase later
     try {
-      console.log("Login with", { email, password });
-      setTimeout(() => {
-        setLoading(false);
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        setError(error.message);
+      } else {
+        toast.success("Login successful!");
         navigate("/dashboard");
-      }, 1500);
-    } catch (err) {
-      setLoading(false);
-      setError("Failed to login. Please check your credentials.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to login. Please check your credentials.");
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
