@@ -16,6 +16,8 @@ import GamesPage from "./pages/games";
 import TeamDetailsPage from "./pages/teams/[id]";
 import TeamChatPage from "./pages/teams/[id]/chat";
 import TeamStrategyPage from "./pages/teams/[id]/strategy";
+import TournamentDetailsPage from "./pages/tournaments/[id]";
+import GameDetailsPage from "./pages/games/[id]";
 
 const queryClient = new QueryClient();
 
@@ -32,12 +34,14 @@ const App = () => (
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/tournaments" element={<TournamentsPage />} />
           <Route path="/tournaments/create" element={<CreateTournamentPage />} />
+          <Route path="/tournaments/:id" element={<TournamentDetailsPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/create" element={<CreateTeamPage />} />
-          <Route path="/games" element={<GamesPage />} />
           <Route path="/teams/:id" element={<TeamDetailsPage />} />
           <Route path="/teams/:id/chat" element={<TeamChatPage />} />
           <Route path="/teams/:id/strategy" element={<TeamStrategyPage />} />
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/games/:id" element={<GameDetailsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
