@@ -1,44 +1,10 @@
 
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
-import { signIn } from "@/lib/supabase";
-import { toast } from "sonner";
+import LoginForm from "@/components/auth/LoginForm";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  
-  const navigate = useNavigate();
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    
-    try {
-      const { error } = await signIn(email, password);
-      
-      if (error) {
-        setError(error.message);
-      } else {
-        toast.success("Login successful!");
-        navigate("/dashboard");
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to login. Please check your credentials.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Layout>
       <div className="flex items-center justify-center min-h-[80vh] py-12 px-4">
@@ -50,45 +16,7 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-sm rounded-md">
-                  {error}
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-background/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input 
-                  id="password" 
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="bg-background/50"
-                />
-              </div>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-                {loading ? "Logging in..." : "Login"}
-              </Button>
-            </form>
-            
+            <LoginForm />
             <div className="mt-4 text-center text-sm">
               <span className="text-foreground/70">Don't have an account?</span>{" "}
               <Link to="/register" className="text-primary hover:underline">

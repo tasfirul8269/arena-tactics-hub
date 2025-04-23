@@ -8,10 +8,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MessageSquare, Bell, Settings, LogOut, HelpCircle, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-  // This would come from your auth context in a real app
-  const isLoggedIn = true;
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="bg-card border-b border-border/40 backdrop-blur-lg sticky top-0 z-50">
@@ -33,7 +33,7 @@ const Navbar = () => {
             Games
           </Link>
 
-          {isLoggedIn ? (
+          {user ? (
             <div className="flex items-center gap-4">
               <Link to="/notifications">
                 <Button variant="ghost" size="icon" className="relative">
@@ -63,7 +63,7 @@ const Navbar = () => {
                     <HelpCircle className="mr-2 h-4 w-4" />
                     <span>Help</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => signOut()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
