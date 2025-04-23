@@ -18,6 +18,7 @@ import TeamChatPage from "./pages/teams/[id]/chat";
 import TeamStrategyPage from "./pages/teams/[id]/strategy";
 import TournamentDetailsPage from "./pages/tournaments/[id]";
 import GameDetailsPage from "./pages/games/[id]";
+import NotificationsPage from "./pages/notifications";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/teams/:id/strategy" element={<TeamStrategyPage />} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/games/:id" element={<GameDetailsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Users, MessageSquare, Map } from "lucide-react";
+import { Users, MessageSquare, Map, Award, GamepadIcon, FileText } from "lucide-react";
 
 const TeamDetailsPage = () => {
   const { id } = useParams();
@@ -13,11 +13,26 @@ const TeamDetailsPage = () => {
   const team = {
     id: Number(id),
     name: id === "1" ? "Nova Esports" : "Team Elite",
-    members: id === "1" ? 5 : 4,
+    members: [
+      { id: 1, name: "John Doe", role: "Team Captain", joinedDate: "2023-01-15" },
+      { id: 2, name: "Jane Smith", role: "IGL", joinedDate: "2023-02-20" },
+      { id: 3, name: "Mike Johnson", role: "Support", joinedDate: "2023-03-10" },
+      { id: 4, name: "Sarah Wilson", role: "Entry Fragger", joinedDate: "2023-04-05" },
+      { id: 5, name: "Alex Brown", role: "Sniper", joinedDate: "2023-05-01" },
+    ],
+    achievements: [
+      { id: 1, title: "PUBG Mobile Pro League - Winner", date: "2024-03" },
+      { id: 2, title: "ESL Mobile Open - Runner Up", date: "2024-02" },
+      { id: 3, title: "Mobile Gaming Championship - Top 4", date: "2024-01" },
+    ],
     game: id === "1" ? "PUBG Mobile" : "Free Fire",
-    achievements: id === "1" ? "3 Tournament Wins" : "Runner-up FFWS 2024",
     logo: "https://placehold.co/100x100",
     description: "A professional esports team competing at the highest level.",
+    stats: {
+      tournamentsWon: 8,
+      matchesPlayed: 156,
+      winRate: "67%",
+    }
   };
 
   return (
@@ -42,9 +57,13 @@ const TeamDetailsPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Team Overview Card */}
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Team Information</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Team Overview
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col md:flex-row gap-6">
@@ -56,37 +75,77 @@ const TeamDetailsPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold">Game</h3>
-                    <p className="text-muted-foreground">{team.game}</p>
+                    <p className="flex items-center gap-2 text-muted-foreground">
+                      <GamepadIcon className="h-4 w-4" />
+                      {team.game}
+                    </p>
                   </div>
-                  <div>
-                    <h3 className="font-semibold">Achievements</h3>
-                    <p className="text-muted-foreground">{team.achievements}</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="font-semibold">{team.stats.tournamentsWon}</p>
+                      <p className="text-sm text-muted-foreground">Tournaments Won</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">{team.stats.matchesPlayed}</p>
+                      <p className="text-sm text-muted-foreground">Matches Played</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">{team.stats.winRate}</p>
+                      <p className="text-sm text-muted-foreground">Win Rate</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Team Members Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Team Members</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Team Roster
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                <Users className="h-4 w-4" />
-                <span>{team.members} Members</span>
-              </div>
               <div className="space-y-4">
-                {Array.from({ length: team.members }).map((_, index) => (
-                  <div key={index} className="flex items-center gap-3">
+                {team.members.map((member) => (
+                  <div key={member.id} className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <Users className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium">Player {index + 1}</p>
-                      <p className="text-sm text-muted-foreground">Team Member</p>
+                      <p className="font-medium">{member.name}</p>
+                      <p className="text-sm text-muted-foreground">{member.role}</p>
                     </div>
                   </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Achievements Card */}
+          <Card className="md:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Recent Achievements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {team.achievements.map((achievement) => (
+                  <Card key={achievement.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Award className="h-5 w-5 text-primary shrink-0" />
+                        <div>
+                          <p className="font-medium">{achievement.title}</p>
+                          <p className="text-sm text-muted-foreground">{achievement.date}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </CardContent>

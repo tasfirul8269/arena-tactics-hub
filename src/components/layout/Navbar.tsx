@@ -11,7 +11,7 @@ import { MessageSquare, Bell, Settings, LogOut, HelpCircle, User } from "lucide-
 
 const Navbar = () => {
   // This would come from your auth context in a real app
-  const isLoggedIn = false;
+  const isLoggedIn = true;
 
   return (
     <nav className="bg-card border-b border-border/40 backdrop-blur-lg sticky top-0 z-50">
@@ -35,12 +35,14 @@ const Navbar = () => {
 
           {isLoggedIn ? (
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  3
-                </span>
-              </Button>
+              <Link to="/notifications">
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    3
+                  </span>
+                </Button>
+              </Link>
               
               <Button variant="ghost" size="icon">
                 <MessageSquare className="h-5 w-5" />

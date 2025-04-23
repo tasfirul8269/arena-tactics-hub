@@ -18,7 +18,7 @@ const TeamStrategyPage = () => {
               Strategy Board
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <MapStrategy />
           </CardContent>
         </Card>
