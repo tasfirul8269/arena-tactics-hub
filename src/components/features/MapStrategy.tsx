@@ -3,170 +3,119 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { MapPin, Pencil, Trash2 } from "lucide-react";
 
-// This is a placeholder for the interactive map component with Mapbox GL
+// This is a simplified map strategy component using static images
 const MapStrategy = () => {
   const [activeMap, setActiveMap] = useState("erangel");
   const [activeMode, setActiveMode] = useState<"none" | "marker" | "route">("none");
-  const [mapboxToken, setMapboxToken] = useState(localStorage.getItem('mapboxToken') || '');
-  const [showTokenInput, setShowTokenInput] = useState(!localStorage.getItem('mapboxToken'));
   
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<mapboxgl.Marker[]>([]);
-  const routeSource = useRef<string>("route");
+  // Map overlay and drawing state
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mapImageRef = useRef<HTMLImageElement | null>(null);
+  const markersRef = useRef<{ x: number; y: number }[]>([]);
+  const routePointsRef = useRef<{ x: number; y: number }[]>([]);
+  const isDrawingRef = useRef<boolean>(false);
+  const isDraggingRef = useRef<boolean>(false);
+  const lastPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   
-  // Handle token input
-  const handleTokenSubmit = () => {
-    if (mapboxToken) {
-      localStorage.setItem('mapboxToken', mapboxToken);
-      setShowTokenInput(false);
-      initializeMap();
-      toast.success("Mapbox token saved");
-    } else {
-      toast.error("Please enter a valid token");
+  // Map images for different maps
+  const mapImages = {
+    erangel: "https://i.imgur.com/PI3qYlK.jpg", // Replace with your actual erangel map image
+    miramar: "https://i.imgur.com/VqRKWz3.jpg", // Replace with your actual miramar map image
+    sanhok: "https://i.imgur.com/tn7sUkl.jpg", // Replace with your actual sanhok map image
+  };
+
+  // Initialize canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const mapImage = mapImageRef.current;
+    
+    if (!canvas || !mapImage) return;
+    
+    // Set canvas dimensions to match image when it loads
+    mapImage.onload = () => {
+      canvas.width = mapImage.width;
+      canvas.height = mapImage.height;
+      drawAll();
+    };
+    
+    mapImage.src = mapImages[activeMap as keyof typeof mapImages];
+  }, [activeMap]);
+
+  // Draw everything on the canvas
+  const drawAll = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw map image
+    const mapImage = mapImageRef.current;
+    if (mapImage && mapImage.complete) {
+      ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
+    }
+
+    // Draw markers
+    markersRef.current.forEach(marker => {
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // Draw route
+    if (routePointsRef.current.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(routePointsRef.current[0].x, routePointsRef.current[0].y);
+      
+      for (let i = 1; i < routePointsRef.current.length; i++) {
+        ctx.lineTo(routePointsRef.current[i].x, routePointsRef.current[i].y);
+      }
+      
+      ctx.strokeStyle = '#F84C4C';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Draw route points
+      routePointsRef.current.forEach(point => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#F84C4C';
+        ctx.fill();
+      });
     }
   };
 
-  // Initialize map
-  const initializeMap = () => {
-    if (!mapContainer.current || !mapboxToken) return;
+  // Handle canvas click
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (activeMode === "none") return;
     
-    if (map.current) return; // Map already initialized
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     
-    mapboxgl.accessToken = mapboxToken;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
     
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [0, 0], // Center based on the selected map
-      zoom: 3,
-    });
+    if (activeMode === "marker") {
+      markersRef.current.push({ x, y });
+      toast.success("Marker placed");
+    } else if (activeMode === "route") {
+      routePointsRef.current.push({ x, y });
+      toast.success("Route point added");
+    }
     
-    // Add navigation control
-    map.current.addControl(
-      new mapboxgl.NavigationControl(),
-      'top-right'
-    );
-    
-    // Initialize route source
-    map.current.on('load', () => {
-      if (!map.current) return;
-      
-      map.current.addSource(routeSource.current, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: []
-          }
-        }
-      });
-      
-      map.current.addLayer({
-        id: 'route',
-        type: 'line',
-        source: routeSource.current,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': '#F84C4C',
-          'line-width': 4,
-          'line-opacity': 0.8
-        }
-      });
-    });
-    
-    // Setup click events for the map
-    map.current.on('click', (e) => {
-      if (!map.current) return;
-      
-      if (activeMode === "marker") {
-        // Add marker
-        const marker = new mapboxgl.Marker({ color: '#F84C4C' })
-          .setLngLat([e.lngLat.lng, e.lngLat.lat])
-          .addTo(map.current);
-        
-        markers.current.push(marker);
-        toast.success("Marker placed");
-      } else if (activeMode === "route") {
-        // Add point to the route
-        const source = map.current.getSource(routeSource.current) as mapboxgl.GeoJSONSource;
-        const currentData = source._data as any;
-        
-        if (!currentData.geometry) {
-          // Initialize with first point
-          source.setData({
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: [[e.lngLat.lng, e.lngLat.lat]]
-            }
-          });
-        } else {
-          // Add point to existing line
-          const coordinates = currentData.geometry.coordinates;
-          coordinates.push([e.lngLat.lng, e.lngLat.lat]);
-          
-          source.setData({
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates
-            }
-          });
-          
-          toast.success("Route point added");
-        }
-      }
-    });
+    drawAll();
   };
-  
-  // Update map center when active map changes
-  useEffect(() => {
-    if (!map.current) return;
-    
-    // Different center points for different maps
-    let center;
-    switch (activeMap) {
-      case "erangel":
-        center = [30, 40];
-        break;
-      case "miramar":
-        center = [-10, 20];
-        break;
-      case "sanhok":
-        center = [90, 10];
-        break;
-      default:
-        center = [0, 0];
-    }
-    
-    map.current.flyTo({ center, essential: true });
-  }, [activeMap]);
-  
-  // Initialize map on component mount if token exists
-  useEffect(() => {
-    if (mapboxToken) {
-      initializeMap();
-    }
-    
-    return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-    };
-  }, []);
-  
+
   // Toggle active mode
   const toggleMode = (mode: "marker" | "route") => {
     setActiveMode(activeMode === mode ? "none" : mode);
@@ -174,25 +123,9 @@ const MapStrategy = () => {
   
   // Clear all markers and routes
   const clearAll = () => {
-    if (!map.current) return;
-    
-    // Clear markers
-    markers.current.forEach(marker => marker.remove());
-    markers.current = [];
-    
-    // Clear route
-    const source = map.current.getSource(routeSource.current) as mapboxgl.GeoJSONSource;
-    if (source) {
-      source.setData({
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: []
-        }
-      });
-    }
-    
+    markersRef.current = [];
+    routePointsRef.current = [];
+    drawAll();
     toast.success("Map cleared");
   };
 
@@ -230,63 +163,51 @@ const MapStrategy = () => {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        {showTokenInput ? (
-          <div className="p-4 flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">To use the interactive map, please enter your Mapbox public token:</p>
-            <input 
-              type="text" 
-              value={mapboxToken} 
-              onChange={(e) => setMapboxToken(e.target.value)}
-              className="border p-2 rounded-md w-full"
-              placeholder="Enter your Mapbox public token"
+        <div className="relative aspect-video bg-muted">
+          <div className="relative w-full h-full overflow-hidden">
+            <img 
+              ref={mapImageRef}
+              src={mapImages[activeMap as keyof typeof mapImages]}
+              alt={`${activeMap} map`}
+              className="absolute invisible"
             />
-            <Button onClick={handleTokenSubmit} className="bg-primary w-fit">
-              Save Token
+            <canvas 
+              ref={canvasRef}
+              onClick={handleCanvasClick}
+              className="w-full h-full cursor-crosshair"
+            />
+          </div>
+          <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+            <Button 
+              size="sm" 
+              className={`${activeMode === "marker" ? "bg-primary" : "bg-primary/80"}`} 
+              title="Place Marker"
+              onClick={() => toggleMode("marker")}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Place Marker
             </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              You can get a free Mapbox token at <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">mapbox.com</a>
-            </p>
+            <Button 
+              size="sm" 
+              className={`${activeMode === "route" ? "bg-primary" : "bg-primary/80"}`} 
+              title="Draw Route"
+              onClick={() => toggleMode("route")}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Draw Route
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="bg-background/50" 
+              title="Clear All"
+              onClick={clearAll}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
           </div>
-        ) : (
-          <div className="relative aspect-video bg-muted">
-            <div ref={mapContainer} className="absolute inset-0">
-              {!mapboxToken && (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted/80 backdrop-blur-sm">
-                  <p className="text-foreground/70">
-                    Mapbox token required for interactive map
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-              <Button 
-                size="sm" 
-                className={`${activeMode === "marker" ? "bg-primary" : "bg-primary/80"}`} 
-                title="Place Marker"
-                onClick={() => toggleMode("marker")}
-              >
-                📍 Place Marker
-              </Button>
-              <Button 
-                size="sm" 
-                className={`${activeMode === "route" ? "bg-primary" : "bg-primary/80"}`} 
-                title="Draw Route"
-                onClick={() => toggleMode("route")}
-              >
-                ✏️ Draw Route
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="bg-background/50" 
-                title="Clear All"
-                onClick={clearAll}
-              >
-                🗑️ Clear
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
