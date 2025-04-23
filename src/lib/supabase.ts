@@ -1,14 +1,28 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+// Get environment variables with empty string fallbacks to prevent URL construction errors
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create the Supabase client only if URL is available
+export const supabase = supabaseUrl 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+// Check if Supabase is configured before using it
+const checkSupabaseConfig = () => {
+  if (!supabase) {
+    console.error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+    throw new Error('Supabase configuration is missing');
+  }
+  return supabase;
+};
 
 // Auth helpers
 export const signUp = async (email: string, password: string, metadata?: { full_name?: string }) => {
-  return await supabase.auth.signUp({
+  const client = checkSupabaseConfig();
+  return await client.auth.signUp({
     email,
     password,
     options: {
@@ -18,24 +32,28 @@ export const signUp = async (email: string, password: string, metadata?: { full_
 };
 
 export const signIn = async (email: string, password: string) => {
-  return await supabase.auth.signInWithPassword({
+  const client = checkSupabaseConfig();
+  return await client.auth.signInWithPassword({
     email,
     password
   });
 };
 
 export const signOut = async () => {
-  return await supabase.auth.signOut();
+  const client = checkSupabaseConfig();
+  return await client.auth.signOut();
 };
 
 export const getCurrentUser = async () => {
-  const { data } = await supabase.auth.getUser();
+  const client = checkSupabaseConfig();
+  const { data } = await client.auth.getUser();
   return data.user;
 };
 
 // Database helpers
 export const fetchTeams = async () => {
-  const { data, error } = await supabase
+  const client = checkSupabaseConfig();
+  const { data, error } = await client
     .from('teams')
     .select('*');
   
@@ -44,7 +62,8 @@ export const fetchTeams = async () => {
 };
 
 export const fetchTeamById = async (id: number) => {
-  const { data, error } = await supabase
+  const client = checkSupabaseConfig();
+  const { data, error } = await client
     .from('teams')
     .select(`
       *,
@@ -59,7 +78,8 @@ export const fetchTeamById = async (id: number) => {
 };
 
 export const fetchGames = async () => {
-  const { data, error } = await supabase
+  const client = checkSupabaseConfig();
+  const { data, error } = await client
     .from('games')
     .select('*');
   
@@ -68,7 +88,8 @@ export const fetchGames = async () => {
 };
 
 export const fetchGameById = async (id: number) => {
-  const { data, error } = await supabase
+  const client = checkSupabaseConfig();
+  const { data, error } = await client
     .from('games')
     .select(`
       *,
@@ -82,7 +103,8 @@ export const fetchGameById = async (id: number) => {
 };
 
 export const fetchTournaments = async () => {
-  const { data, error } = await supabase
+  const client = checkSupabaseConfig();
+  const { data, error } = await client
     .from('tournaments')
     .select('*');
   
@@ -91,7 +113,8 @@ export const fetchTournaments = async () => {
 };
 
 export const fetchUserNotifications = async (userId: string) => {
-  const { data, error } = await supabase
+  const client = checkSupabaseConfig();
+  const { data, error } = await client
     .from('notifications')
     .select('*')
     .eq('user_id', userId)
@@ -102,7 +125,8 @@ export const fetchUserNotifications = async (userId: string) => {
 };
 
 export const markNotificationAsRead = async (notificationId: number) => {
-  const { error } = await supabase
+  const client = checkSupabaseConfig();
+  const { error } = await client
     .from('notifications')
     .update({ read: true })
     .eq('id', notificationId);
@@ -112,7 +136,8 @@ export const markNotificationAsRead = async (notificationId: number) => {
 };
 
 export const saveMapStrategy = async (teamId: number, mapName: string, markers: any[], routePoints: any[]) => {
-  const { error } = await supabase
+  const client = checkSupabaseConfig();
+  const { error } = await client
     .from('team_strategies')
     .upsert({
       team_id: teamId,
@@ -127,7 +152,8 @@ export const saveMapStrategy = async (teamId: number, mapName: string, markers: 
 };
 
 export const getTeamStrategy = async (teamId: number, mapName: string) => {
-  const { data, error } = await supabase
+  const client = checkSupabaseConfig();
+  const { data, error } = await client
     .from('team_strategies')
     .select('*')
     .eq('team_id', teamId)
